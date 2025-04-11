@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+=======
 # Logs
 logs
 *.log
@@ -22,3 +28,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+>>>>>>> main
