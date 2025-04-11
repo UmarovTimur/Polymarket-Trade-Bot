@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { Button } from "../ui/button"
 
 // Статичные данные JSON
 const json = [
@@ -432,18 +433,20 @@ const Dashboard = () => {
   const getChartData = () => {
     const groupedData: { [key: string]: number } = {}
   
-    // Группируем данные по дням или часам в зависимости от выбранного варианта
     jsonData.forEach((row: any) => {
+      const date = new Date(row.time)
       let key = ""
+  
       if (groupBy === "days") {
-        // Получаем день в формате YYYY-MM-DD
-        key = new Date(row.time).toISOString().split('T')[0]
+        // Используем ISO без времени
+        key = date.toISOString().split("T")[0] // YYYY-MM-DD
       } else if (groupBy === "hours") {
-        // Получаем час и делаем его двухзначным
-        key = new Date(row.time).getHours().toString().padStart(2, '0')
+        // Приводим к полному ISO с точностью до часа
+        const hourKey = new Date(date)
+        hourKey.setMinutes(0, 0, 0)
+        key = hourKey.toISOString()
       }
   
-      // Если такого ключа ещё нет в groupedData, создаём его
       if (!groupedData[key]) {
         groupedData[key] = 1
       } else {
@@ -451,40 +454,54 @@ const Dashboard = () => {
       }
     })
   
-    // Форматируем данные для графика
-    const chartData = Object.keys(groupedData).map((key) => ({
+    // Преобразуем в массив объектов для графика
+    return Object.entries(groupedData).map(([key, count]) => ({
       key,
-      count: groupedData[key],
+      count,
     }))
-  
-    return chartData
   }
-  
-  
-
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>JSON Dashboard</h1>
-
+    <div>
       {/* Переключатель для дня/часа */}
-      <div>
-        <button onClick={() => setGroupBy("days")}>По дням</button>
-        <button onClick={() => setGroupBy("hours")}>По часам</button>
-      </div>
+      
 
       {/* График */}
       {jsonData.length > 0 && (
-        <ResponsiveContainer width={800} height={400}>
+        <ResponsiveContainer width="100%" height={400}>
           <LineChart data={getChartData()}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="key" />
+            <XAxis dataKey="key"
+            tickFormatter={(tick) => {
+              const date = new Date(tick)
+              if (groupBy === "days") {
+                return date.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) // "18 апр"
+              } else {
+                return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) // "13:00"
+              }
+            }}
+            />
             <YAxis />
-            <Tooltip />
+            <Tooltip
+            labelFormatter={(label) => {
+              const date = new Date(label)
+              return groupBy === "days"
+                ? date.toLocaleDateString("ru-RU", { day: "2-digit", month: "long" }) // "18 апреля"
+                : date.toLocaleString("ru-RU", {
+                    day: "2-digit",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }) // "18 апр., 13:00"
+            }}/>
             <Legend />
-            <Line type="monotone" dataKey="count" stroke="#8884d8" />
+            <Line type="monotone" dataKey="count" stroke="oklch(0.205 0 0)" isAnimationActive={false}/>
           </LineChart>
         </ResponsiveContainer>
       )}
+      <div className="button-group mb-4 mt-4 flex gap-2 justify-center">
+        <Button onClick={() => setGroupBy("days")}>По дням</Button>
+        <Button onClick={() => setGroupBy("hours")}>По часам</Button>
+      </div>
     </div>
   )
 }
